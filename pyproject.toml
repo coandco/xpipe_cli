@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "xpipe-cli"
+version = "0.1.0"
+description = ""
+authors = ["Clint Olson <coandco@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+click = "^8.1.7"
+requests-toolbelt = "^1.0.0"
+tqdm = "^4.66.4"
+prettytable = "^3.10.0"
+xpipe-client = "^0.1.9"
+
+[tool.poetry.scripts]
+xpipe-cli = "xpipe_cli.cli:cli"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
