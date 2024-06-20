@@ -1,9 +1,10 @@
+import json
 from typing import Optional
 
 import click
-from xpipe_client import Client
 from prettytable import PrettyTable
 from tqdm import tqdm
+from xpipe_client import Client
 
 
 # Resolving to shortest name length for now, probably want to throw an error on duplicates once testing is done
@@ -94,13 +95,25 @@ def push(client: Client, local: click.File, remote: str):
     client.shell_stop(connection)
     print("Done!")
 
-@cli.command()
-@click.argument('connection', type=str)
+
+@cli.command(name='exec')
+@click.argument('connection_name', type=str)
 @click.argument('command', type=str)
+@click.option('-r', '--raw', is_flag=True, help="Print stdout directly instead of the whole result object")
 @click.pass_obj
-def exec(client: Client, connection: str, command: str):
-    """Execute COMMAND on CONNECTION"""
-    pass
+def fs_exec(client: Client, connection_name: str, command: str, raw: bool):
+    """Execute COMMAND on CONNECTION_NAME"""
+    connection = resolve_connection_name(client, connection_name)
+    if not connection:
+        print(f"Couldn't find connection UUID for {connection_name}")
+        exit(1)
+    client.shell_start(connection)
+    result = client.shell_exec(connection, command)
+    if raw:
+        print(result["stdout"])
+    else:
+        print(json.dumps(result, indent=2))
+    client.shell_stop(connection)
 
 
 if __name__ == '__main__':
