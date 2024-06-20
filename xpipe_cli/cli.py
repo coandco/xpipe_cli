@@ -16,7 +16,6 @@ def resolve_connection_name(client: Client, name: str) -> Optional[str]:
     return possible_matches[0]["connection"] if possible_matches else None
 
 
-
 @click.group()
 @click.option('--ptb', is_flag=True, help="Use PTB port instead of release port")
 @click.option('--base-url', default=None, help="Override the URL of the XPipe server to talk to")
@@ -51,14 +50,19 @@ def ls(client: Client, category: str, name: str, type: str, output_format: str, 
 @click.pass_obj
 def pull(client: Client, remote: str, local: click.File):
     """Read REMOTE (<connection_name>:/path/to/file) and write to LOCAL (/path/to/file)"""
-    connection, remote_path = remote.rsplit(":", 1)
-    connection = resolve_connection_name(client, connection)
+    connection_name, remote_path = remote.rsplit(":", 1)
+    connection = resolve_connection_name(client, connection_name)
+    if not connection:
+        print(f"Couldn't find connection UUID for {connection_name}")
+        exit(1)
     client.shell_start(connection)
+    print(f"Getting size of remote file {remote}...")
     try:
         stat_result = client.shell_exec(connection, f'stat -c %s {remote_path}')
         length = int(stat_result["stdout"])
     except Exception:
         length = 0
+    print(f"Copying {remote} to {local.name}...")
     with tqdm(total=length, unit="B", unit_scale=True) as progress_bar:
         resp = client._fs_read(connection, remote_path)
         length = int(resp.headers.get("content-length", 0))
@@ -67,6 +71,7 @@ def pull(client: Client, remote: str, local: click.File):
         for chunk in resp.iter_content(1024):
             progress_bar.update(len(chunk))
             local.write(chunk)
+    print(f"Done!")
     client.shell_stop(connection)
 
 
@@ -76,10 +81,18 @@ def pull(client: Client, remote: str, local: click.File):
 @click.pass_obj
 def push(client: Client, local: click.File, remote: str):
     """Read LOCAL (/path/to/file) and write to REMOTE (<connection_name>:/path/to/file)"""
-    connection, remote_path = remote.rsplit(":", 1)
-    connection = resolve_connection_name(client, connection)
+    connection_name, remote_path = remote.rsplit(":", 1)
+    connection = resolve_connection_name(client, connection_name)
+    if not connection:
+        print(f"Couldn't find connection UUID for {connection_name}")
+        exit(1)
     client.shell_start(connection)
+    print(f"Uploading {local.name} to XPipe API...")
+    blob_id = client.fs_blob(local)
+    print(f"Copying uploaded file to {remote}...")
+    client.fs_write(connection, blob_id, remote_path)
     client.shell_stop(connection)
+    print("Done!")
 
 @cli.command()
 @click.argument('connection', type=str)
