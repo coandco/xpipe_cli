@@ -60,8 +60,8 @@ def cli(ctx: click.Context, ptb: bool, base_url: Optional[str], token: Optional[
 @click.option("--reverse", is_flag=True, help="Sort the table in reverse")
 @click.pass_obj
 def ls(client: Client, category: str, name: str, type: str, output_format: str, sort_by: str, reverse: bool):
-    """Lists connections, with optional filters"""
-    connections = client.connection_query(categories=category, connections=name, types=type)
+    """List connections, with optional filters"""
+    connections = client.connection_query(categories=category, connections=name, types=type.lower())
     table = PrettyTable()
     table.align = "l"
     table.field_names = ["Name", "Type", "Category", "UUID"]
@@ -71,7 +71,6 @@ def ls(client: Client, category: str, name: str, type: str, output_format: str, 
 
 
 async def probe_connections(async_client: AsyncClient, connections: List[dict]) -> List[Exception]:
-    await async_client.renew_session()
     lock = asyncio.Semaphore(10)
 
     async def _probe(connection) -> dict:
@@ -106,7 +105,8 @@ async def probe_connections(async_client: AsyncClient, connections: List[dict]) 
 @click.option("--type", default="*", help="Globbed type filter, defaults to *")
 @click.pass_obj
 def probe(client: Client, category: str, name: str, type: str):
-    connections = client.connection_query(categories=category, connections=name, types=type)
+    """Probe connections, with optional filters"""
+    connections = client.connection_query(categories=category, connections=name, types=type.lower())
     print(f"Spinning up probe requests for {len(connections)} hosts...")
     async_client = AsyncClient.from_sync_client(client)
     success = asyncio.run(probe_connections(async_client, connections))
@@ -165,11 +165,11 @@ def push(client: Client, local: click.File, remote: str):
 
 
 @cli.command(name="exec")
-@click.argument("connection_name", type=str)
 @click.argument("command", type=str)
+@click.argument("connection_name", type=str)
 @click.option("-r", "--raw", is_flag=True, help="Print stdout directly instead of the whole result object")
 @click.pass_obj
-def fs_exec(client: Client, connection_name: str, command: str, raw: bool):
+def fs_exec(client: Client, command: str, connection_name: str, raw: bool):
     """Execute COMMAND on CONNECTION_NAME"""
     connection = resolve_connection_name(client, connection_name)
     if not connection:
@@ -185,11 +185,12 @@ def fs_exec(client: Client, connection_name: str, command: str, raw: bool):
 
 
 @cli.command()
-@click.argument("connection_name", type=str)
 @click.argument("script_file", type=click.File("rb"))
+@click.argument("connection_name", type=str)
 @click.option("-r", "--raw", is_flag=True, help="Print stdout directly instead of the whole result object")
 @click.pass_obj
-def run_script(client: Client, connection_name, script_file: click.File, raw: bool):
+def run_script(client: Client, script_file: click.File, connection_name: str, raw: bool):
+    """Run SCRIPT_FILE on CONNECTION_NAME"""
     connection = resolve_connection_name(client, connection_name)
     if not connection:
         print(f"Couldn't find connection UUID for {connection_name}")
