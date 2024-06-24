@@ -1,12 +1,12 @@
+import asyncio
 import json
-from typing import Optional, List
+from typing import List, Optional
 
 import click
-from requests import ConnectionError
 from prettytable import PrettyTable
+from requests import ConnectionError
 from tqdm import tqdm
-from xpipe_client import Client, AsyncClient
-import asyncio
+from xpipe_client import AsyncClient, Client
 
 
 # Resolving to shortest name length for now, probably want to throw an error on duplicates once testing is done
@@ -15,13 +15,15 @@ def resolve_connection_name(client: Client, name: str) -> Optional[str]:
     if name == "":
         return client.connection_query(connections="")[0]["connection"]
     all_connections = client.connection_query()
-    possible_matches = sorted([x for x in all_connections if x["name"] and x["name"][-1] == name], key=lambda x: len(x["name"]))
+    possible_matches = sorted(
+        [x for x in all_connections if x["name"] and x["name"][-1] == name], key=lambda x: len(x["name"])
+    )
     return possible_matches[0]["connection"] if possible_matches else None
 
 
 @click.group()
-@click.option('--ptb', is_flag=True, help="Use PTB port instead of release port")
-@click.option('--base-url', default=None, help="Override the URL of the XPipe server to talk to")
+@click.option("--ptb", is_flag=True, help="Use PTB port instead of release port")
+@click.option("--base-url", default=None, help="Override the URL of the XPipe server to talk to")
 @click.option("--token", default=None, help="The API token to use if the XPipe server isn't local")
 @click.pass_context
 def cli(ctx: click.Context, ptb: bool, base_url: Optional[str], token: Optional[str]):
@@ -29,26 +31,39 @@ def cli(ctx: click.Context, ptb: bool, base_url: Optional[str], token: Optional[
     try:
         ctx.obj.renew_session()
     except ConnectionError:
-        print(f"Failed to connect to {ctx.obj.base_url}. \n"
-              "Check if XPipe is running, and if you're running the PTB version of XPipe, "
-              "try passing the --ptb flag before your action, like so: \n"
-              "xpipe-cli --ptb ls")
+        print(
+            f"Failed to connect to {ctx.obj.base_url}. \n"
+            "Check if XPipe is running, and if you're running the PTB version of XPipe, "
+            "try passing the --ptb flag before your action, like so: \n"
+            "xpipe-cli --ptb ls"
+        )
         exit(1)
 
 
 @cli.command()
-@click.option('--category', '-c', default='*', help='Globbed category filter, defaults to *')
-@click.option('--name', '-n', default='*', help="Globbed name filter, defaults to *")
-@click.option('--type', default='*', help="Globbed type filter, defaults to *")
-@click.option('--output-format', '-f', default="text", type=click.Choice(["text", "html", "json", "csv", "latex"]), help="Output format")
-@click.option('--sort-by', default="name", type=click.Choice(['name', 'type', 'category', 'uuid'], case_sensitive=False), help="Field to sort by")
-@click.option('--reverse', is_flag=True, help="Sort the table in reverse")
+@click.option("--category", "-c", default="*", help="Globbed category filter, defaults to *")
+@click.option("--name", "-n", default="*", help="Globbed name filter, defaults to *")
+@click.option("--type", default="*", help="Globbed type filter, defaults to *")
+@click.option(
+    "--output-format",
+    "-f",
+    default="text",
+    type=click.Choice(["text", "html", "json", "csv", "latex"]),
+    help="Output format",
+)
+@click.option(
+    "--sort-by",
+    default="name",
+    type=click.Choice(["name", "type", "category", "uuid"], case_sensitive=False),
+    help="Field to sort by",
+)
+@click.option("--reverse", is_flag=True, help="Sort the table in reverse")
 @click.pass_obj
 def ls(client: Client, category: str, name: str, type: str, output_format: str, sort_by: str, reverse: bool):
     """Lists connections, with optional filters"""
     connections = client.connection_query(categories=category, connections=name, types=type)
     table = PrettyTable()
-    table.align = 'l'
+    table.align = "l"
     table.field_names = ["Name", "Type", "Category", "UUID"]
     for c in connections:
         table.add_row(["/".join(c["name"]), c["type"], ",".join(c["category"]), c["connection"]])
@@ -86,9 +101,9 @@ async def probe_connections(async_client: AsyncClient, connections: List[dict]) 
 
 
 @cli.command()
-@click.option('--category', '-c', default='*', help='Globbed category filter, defaults to *')
-@click.option('--name', '-n', default='*', help="Globbed name filter, defaults to *")
-@click.option('--type', default='*', help="Globbed type filter, defaults to *")
+@click.option("--category", "-c", default="*", help="Globbed category filter, defaults to *")
+@click.option("--name", "-n", default="*", help="Globbed name filter, defaults to *")
+@click.option("--type", default="*", help="Globbed type filter, defaults to *")
 @click.pass_obj
 def probe(client: Client, category: str, name: str, type: str):
     connections = client.connection_query(categories=category, connections=name, types=type)
@@ -99,8 +114,8 @@ def probe(client: Client, category: str, name: str, type: str):
 
 
 @cli.command()
-@click.argument('remote', type=str)
-@click.argument('local', type=click.File('wb'))
+@click.argument("remote", type=str)
+@click.argument("local", type=click.File("wb"))
 @click.pass_obj
 def pull(client: Client, remote: str, local: click.File):
     """Read REMOTE (<connection_name>:/path/to/file) and write to LOCAL (/path/to/file)"""
@@ -112,7 +127,7 @@ def pull(client: Client, remote: str, local: click.File):
     client.shell_start(connection)
     print(f"Getting size of remote file {remote}...")
     try:
-        stat_result = client.shell_exec(connection, f'stat -c %s {remote_path}')
+        stat_result = client.shell_exec(connection, f"stat -c %s {remote_path}")
         length = int(stat_result["stdout"])
     except Exception:
         length = 0
@@ -130,8 +145,8 @@ def pull(client: Client, remote: str, local: click.File):
 
 
 @cli.command()
-@click.argument('local', type=click.File('rb'))
-@click.argument('remote', type=str)
+@click.argument("local", type=click.File("rb"))
+@click.argument("remote", type=str)
 @click.pass_obj
 def push(client: Client, local: click.File, remote: str):
     """Read LOCAL (/path/to/file) and write to REMOTE (<connection_name>:/path/to/file)"""
@@ -149,10 +164,10 @@ def push(client: Client, local: click.File, remote: str):
     print("Done!")
 
 
-@cli.command(name='exec')
-@click.argument('connection_name', type=str)
-@click.argument('command', type=str)
-@click.option('-r', '--raw', is_flag=True, help="Print stdout directly instead of the whole result object")
+@cli.command(name="exec")
+@click.argument("connection_name", type=str)
+@click.argument("command", type=str)
+@click.option("-r", "--raw", is_flag=True, help="Print stdout directly instead of the whole result object")
 @click.pass_obj
 def fs_exec(client: Client, connection_name: str, command: str, raw: bool):
     """Execute COMMAND on CONNECTION_NAME"""
@@ -168,10 +183,11 @@ def fs_exec(client: Client, connection_name: str, command: str, raw: bool):
         print(json.dumps(result, indent=2))
     client.shell_stop(connection)
 
+
 @cli.command()
-@click.argument('connection_name', type=str)
-@click.argument('script_file', type=click.File('rb'))
-@click.option('-r', '--raw', is_flag=True, help="Print stdout directly instead of the whole result object")
+@click.argument("connection_name", type=str)
+@click.argument("script_file", type=click.File("rb"))
+@click.option("-r", "--raw", is_flag=True, help="Print stdout directly instead of the whole result object")
 @click.pass_obj
 def run_script(client: Client, connection_name, script_file: click.File, raw: bool):
     connection = resolve_connection_name(client, connection_name)
@@ -189,5 +205,5 @@ def run_script(client: Client, connection_name, script_file: click.File, raw: bo
     client.shell_stop(connection)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()
