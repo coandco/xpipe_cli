@@ -2,6 +2,7 @@ import json
 from typing import Optional, List
 
 import click
+from requests import ConnectionError
 from prettytable import PrettyTable
 from tqdm import tqdm
 from xpipe_client import Client, AsyncClient
@@ -25,6 +26,14 @@ def resolve_connection_name(client: Client, name: str) -> Optional[str]:
 @click.pass_context
 def cli(ctx: click.Context, ptb: bool, base_url: Optional[str], token: Optional[str]):
     ctx.obj = Client(token=token, base_url=base_url, ptb=ptb)
+    try:
+        ctx.obj.renew_session()
+    except ConnectionError:
+        print(f"Failed to connect to {ctx.obj.base_url}. \n"
+              "Check if XPipe is running, and if you're running the PTB version of XPipe, "
+              "try passing the --ptb flag before your action, like so: \n"
+              "xpipe-cli --ptb ls")
+        exit(1)
 
 
 @cli.command()
