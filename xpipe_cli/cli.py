@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import click
 from prettytable import PrettyTable
-from requests import ConnectionError
+from requests import ConnectionError, HTTPError
 from tqdm import tqdm
 from xpipe_client import AsyncClient, Client
 
@@ -206,5 +206,12 @@ def run_script(client: Client, script_file: click.File, connection_name: str, ra
     client.shell_stop(connection)
 
 
+def handled_cli():
+    try:
+        return cli()
+    except HTTPError as e:
+        print(e)
+
+
 if __name__ == "__main__":
-    cli()
+    handled_cli()
