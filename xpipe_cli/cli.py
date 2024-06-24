@@ -1,10 +1,11 @@
 import json
-from typing import Optional
+from typing import Optional, List
 
 import click
 from prettytable import PrettyTable
 from tqdm import tqdm
-from xpipe_client import Client
+from xpipe_client import Client, AsyncClient
+import asyncio
 
 
 # Resolving to shortest name length for now, probably want to throw an error on duplicates once testing is done
@@ -43,6 +44,49 @@ def ls(client: Client, category: str, name: str, type: str, output_format: str, 
     for c in connections:
         table.add_row(["/".join(c["name"]), c["type"], ",".join(c["category"]), c["connection"]])
     print(table.get_formatted_string(output_format, sortby=sort_by.title(), reversesort=reverse))
+
+
+async def probe_connections(async_client: AsyncClient, connections: List[dict]) -> List[Exception]:
+    await async_client.renew_session()
+    lock = asyncio.Semaphore(10)
+
+    async def _probe(connection) -> dict:
+        async with lock:
+            try:
+                return await async_client.shell_start(connection["connection"])
+            except Exception as e:
+                print(f"Connection '{'/'.join(connection['name'])}' failed with error {e}")
+                raise
+
+    async def _close(connection):
+        async with lock:
+            await async_client.shell_stop(connection["connection"])
+
+    async def _progress(tasks: List[asyncio.Task]):
+        while num_left := len([x for x in tasks if not x.done()]):
+            print(f"{num_left} hosts remaining...")
+            await asyncio.sleep(5)
+
+    tasks = [asyncio.create_task(_probe(x)) for x in connections]
+    progress_task = asyncio.create_task(_progress(tasks))
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    await progress_task
+    await asyncio.gather(*(asyncio.create_task(_close(x)) for x in connections), return_exceptions=True)
+    # If we have no exceptions, we were successful
+    return all(isinstance(x, dict) for x in results)
+
+
+@cli.command()
+@click.option('--category', '-c', default='*', help='Globbed category filter, defaults to *')
+@click.option('--name', '-n', default='*', help="Globbed name filter, defaults to *")
+@click.option('--type', default='*', help="Globbed type filter, defaults to *")
+@click.pass_obj
+def probe(client: Client, category: str, name: str, type: str):
+    connections = client.connection_query(categories=category, connections=name, types=type)
+    print(f"Spinning up probe requests for {len(connections)} hosts...")
+    async_client = AsyncClient.from_sync_client(client)
+    success = asyncio.run(probe_connections(async_client, connections))
+    print("Probing finished with no errors!" if success else "Some errors during probing")
 
 
 @cli.command()
@@ -109,6 +153,26 @@ def fs_exec(client: Client, connection_name: str, command: str, raw: bool):
         exit(1)
     client.shell_start(connection)
     result = client.shell_exec(connection, command)
+    if raw:
+        print(result["stdout"])
+    else:
+        print(json.dumps(result, indent=2))
+    client.shell_stop(connection)
+
+@cli.command()
+@click.argument('connection_name', type=str)
+@click.argument('script_file', type=click.File('rb'))
+@click.option('-r', '--raw', is_flag=True, help="Print stdout directly instead of the whole result object")
+@click.pass_obj
+def run_script(client: Client, connection_name, script_file: click.File, raw: bool):
+    connection = resolve_connection_name(client, connection_name)
+    if not connection:
+        print(f"Couldn't find connection UUID for {connection_name}")
+        exit(1)
+    client.shell_start(connection)
+    blob_id = client.fs_blob(script_file)
+    remote_path = client.fs_script(connection, blob_id)
+    result = client.shell_exec(connection, remote_path)
     if raw:
         print(result["stdout"])
     else:

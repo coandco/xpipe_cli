@@ -888,13 +888,13 @@ files = [
 
 [[package]]
 name = "xpipe-client"
-version = "0.1.12"
+version = "0.1.15"
 description = "Client for the XPipe API"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "xpipe_client-0.1.12-py3-none-any.whl", hash = "sha256:0ed38a697f973499fc296436c834e7a83cb5892f65a42c85fa5fe6e3c35bf7f5"},
-    {file = "xpipe_client-0.1.12.tar.gz", hash = "sha256:721a413d4434451eb014d73d3277bedce07b12f8cb2029005fa35b4e0e8e8a4a"},
+    {file = "xpipe_client-0.1.15-py3-none-any.whl", hash = "sha256:17c826b02f446b4aea27a29cc21fe181f80679b7559320f7d4e572b5d9a3d17a"},
+    {file = "xpipe_client-0.1.15.tar.gz", hash = "sha256:cd30539ded0b00478433b61ca472c7a73bffaab9e3968ec2e4dbe72c3e02bc5c"},
 ]
 
 [package.dependencies]
@@ -1007,4 +1007,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "a6f0296c004df50ffa70b4085ee4243206535e8365fc314a81172b2f05af255c"
+content-hash = "b6d9dd3f93dd00c66e066f8ad5e3f442f8fe53cb4f6a9f8f5d357bbd39ff91eb"
