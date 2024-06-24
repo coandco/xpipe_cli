@@ -25,6 +25,7 @@ def resolve_connection_name(client: Client, name: str) -> Optional[str]:
 @click.option("--ptb", is_flag=True, help="Use PTB port instead of release port")
 @click.option("--base-url", default=None, help="Override the URL of the XPipe server to talk to")
 @click.option("--token", default=None, help="The API token to use if the XPipe server isn't local")
+@click.version_option()
 @click.pass_context
 def cli(ctx: click.Context, ptb: bool, base_url: Optional[str], token: Optional[str]):
     ctx.obj = Client(token=token, base_url=base_url, ptb=ptb)
