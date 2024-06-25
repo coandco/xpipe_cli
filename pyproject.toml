@@ -11,7 +11,7 @@ click = "^8.1.7"
 requests-toolbelt = "^1.0.0"
 tqdm = "^4.66.4"
 prettytable = "^3.10.0"
-xpipe-client = "^0.1.15"
+xpipe-client = "^0.1.16"
 
 [tool.poetry.scripts]
 xpipe-cli = "xpipe_cli.cli:handled_cli"

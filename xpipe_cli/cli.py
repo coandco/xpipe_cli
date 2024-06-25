@@ -13,7 +13,7 @@ from xpipe_client import AsyncClient, Client
 def resolve_connection_name(client: Client, name: str) -> Optional[str]:
     # Special-case the local/default connection
     if name == "":
-        return client.connection_query(connections="")[0]["connection"]
+        return client.connection_query(connections="")[0]
     all_connections = client.connection_query()
     possible_matches = sorted(
         [x for x in all_connections if x["name"] and x["name"][-1] == name], key=lambda x: len(x["name"])
@@ -44,7 +44,7 @@ def cli(ctx: click.Context, ptb: bool, base_url: Optional[str], token: Optional[
 @cli.command()
 @click.option("--category", "-c", default="*", help="Globbed category filter, defaults to *")
 @click.option("--name", "-n", default="*", help="Globbed name filter, defaults to *")
-@click.option("--type", default="*", help="Globbed type filter, defaults to *")
+@click.option("--type", '-t', 'con_type', default="*", help="Globbed type filter, defaults to *")
 @click.option(
     "--output-format",
     "-f",
@@ -60,9 +60,9 @@ def cli(ctx: click.Context, ptb: bool, base_url: Optional[str], token: Optional[
 )
 @click.option("--reverse", is_flag=True, help="Sort the table in reverse")
 @click.pass_obj
-def ls(client: Client, category: str, name: str, type: str, output_format: str, sort_by: str, reverse: bool):
+def ls(client: Client, category: str, name: str, con_type: str, output_format: str, sort_by: str, reverse: bool):
     """List connections, with optional filters"""
-    connections = client.connection_query(categories=category, connections=name, types=type.lower())
+    connections = client.get_connections(categories=category, connections=name, types=con_type)
     table = PrettyTable()
     table.align = "l"
     table.field_names = ["Name", "Type", "Category", "UUID"]
@@ -71,7 +71,7 @@ def ls(client: Client, category: str, name: str, type: str, output_format: str, 
     print(table.get_formatted_string(output_format, sortby=sort_by.title(), reversesort=reverse))
 
 
-async def probe_connections(async_client: AsyncClient, connections: List[dict]) -> List[Exception]:
+async def probe_connections(async_client: AsyncClient, connections: List[dict]) -> bool:
     lock = asyncio.Semaphore(10)
 
     async def _probe(connection) -> dict:
@@ -103,11 +103,13 @@ async def probe_connections(async_client: AsyncClient, connections: List[dict]) 
 @cli.command()
 @click.option("--category", "-c", default="*", help="Globbed category filter, defaults to *")
 @click.option("--name", "-n", default="*", help="Globbed name filter, defaults to *")
-@click.option("--type", default="*", help="Globbed type filter, defaults to *")
+@click.option("--type", '-t', 'con_type', default="*", help="Globbed type filter, defaults to *")
 @click.pass_obj
-def probe(client: Client, category: str, name: str, type: str):
+def probe(client: Client, category: str, name: str, con_type: str):
     """Probe connections, with optional filters"""
-    connections = client.connection_query(categories=category, connections=name, types=type.lower())
+    connections = client.get_connections(categories=category, connections=name, types=con_type)
+    # Filter down to only shell-enabled connections
+    connections = [x for x in connections if x["usageCategory"] == "shell"]
     print(f"Spinning up probe requests for {len(connections)} hosts...")
     async_client = AsyncClient.from_sync_client(client)
     success = asyncio.run(probe_connections(async_client, connections))
