@@ -1,6 +1,7 @@
 import asyncio
 import json
 from typing import List, Optional
+from uuid import UUID
 
 import click
 from prettytable import PrettyTable
@@ -11,9 +12,13 @@ from xpipe_client import AsyncClient, Client
 
 # Resolving to shortest name length for now, probably want to throw an error on duplicates once testing is done
 def resolve_connection_name(client: Client, name: str) -> Optional[str]:
-    # Special-case the local/default connection
-    if name == "":
-        return client.connection_query(connections="")[0]["connection"]
+    # If the name is a valid UUID, assume we want to just use it without trying to look anything up
+    try:
+        UUID(name)
+        return name
+    except ValueError:
+        pass
+
     all_connections = client.connection_query()
     possible_matches = sorted(
         [x for x in all_connections if x["name"] and x["name"][-1] == name], key=lambda x: len(x["name"])
