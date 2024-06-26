@@ -710,6 +710,17 @@ files = [
 ]
 
 [[package]]
+name = "packaging"
+version = "24.1"
+description = "Core utilities for Python packages"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "packaging-24.1-py3-none-any.whl", hash = "sha256:5b8f2217dbdbd2f7f384c41c628544e6d52f2d0f53c6d0c3ea61aa5d1d7ff124"},
+    {file = "packaging-24.1.tar.gz", hash = "sha256:026ed72c8ed3fcce5bf8950572258698927fd1dbda10a5e981cdf0ac37f4f002"},
+]
+
+[[package]]
 name = "prettytable"
 version = "3.10.0"
 description = "A simple Python library for easily displaying tabular data in a visually appealing ASCII table format"
@@ -888,17 +899,18 @@ files = [
 
 [[package]]
 name = "xpipe-client"
-version = "0.1.15"
+version = "0.1.19"
 description = "Client for the XPipe API"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "xpipe_client-0.1.15-py3-none-any.whl", hash = "sha256:17c826b02f446b4aea27a29cc21fe181f80679b7559320f7d4e572b5d9a3d17a"},
-    {file = "xpipe_client-0.1.15.tar.gz", hash = "sha256:cd30539ded0b00478433b61ca472c7a73bffaab9e3968ec2e4dbe72c3e02bc5c"},
+    {file = "xpipe_client-0.1.19-py3-none-any.whl", hash = "sha256:db33a749f17be276294ce27725988abe1e6cebb72e5173bcaf8c9ec40abe3059"},
+    {file = "xpipe_client-0.1.19.tar.gz", hash = "sha256:c491c4393a4a314f165536080e2f22d7297000d05e4780982ff565dcae81a950"},
 ]
 
 [package.dependencies]
 aiohttp-requests = ">=0.2.4,<0.3.0"
+packaging = ">=24.1,<25.0"
 requests = ">=2.32.3,<3.0.0"
 
 [[package]]
@@ -1007,4 +1019,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "b6d9dd3f93dd00c66e066f8ad5e3f442f8fe53cb4f6a9f8f5d357bbd39ff91eb"
+content-hash = "01a3e968a6784ea43022910615364600b7a147f3eb7fec22181ec63948145619"

@@ -62,7 +62,7 @@ def cli(ctx: click.Context, ptb: bool, base_url: Optional[str], token: Optional[
 @click.pass_obj
 def ls(client: Client, category: str, name: str, type: str, output_format: str, sort_by: str, reverse: bool):
     """List connections, with optional filters"""
-    connections = client.connection_query(categories=category, connections=name, types=type.lower())
+    connections = client.get_connections(categories=category, connections=name, types=type.lower())
     table = PrettyTable()
     table.align = "l"
     table.field_names = ["Name", "Type", "Category", "UUID"]
