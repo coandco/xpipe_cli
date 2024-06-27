@@ -1,5 +1,7 @@
 import asyncio
 import json
+import logging
+import logging.config
 from typing import List, Optional
 from uuid import UUID
 
@@ -8,6 +10,8 @@ from prettytable import PrettyTable
 from requests import ConnectionError, HTTPError
 from tqdm import tqdm
 from xpipe_client import AsyncClient, Client
+
+logger = logging.getLogger(__name__)
 
 
 # Resolving to shortest name length for now, probably want to throw an error on duplicates once testing is done
@@ -30,10 +34,14 @@ def resolve_connection_name(client: Client, name: str) -> Optional[str]:
 @click.option("--ptb", is_flag=True, help="Use PTB port instead of release port")
 @click.option("--base-url", default=None, help="Override the URL of the XPipe server to talk to")
 @click.option("--token", default=None, help="The API token to use if the XPipe server isn't local")
+@click.option("--log-level", default="info", type=click.Choice(["error", "warning", "info", "debug"]), help="Severity of logs to print")
 @click.version_option()
 @click.pass_context
-def cli(ctx: click.Context, ptb: bool, base_url: Optional[str], token: Optional[str]):
+def cli(ctx: click.Context, ptb: bool, base_url: Optional[str], token: Optional[str], log_level: str):
     ctx.obj = Client(token=token, base_url=base_url, ptb=ptb)
+    # Otherwise, urllib3 spams on every connection if it's set to debug
+    logging.getLogger('urllib3').propagate = False
+    logging.basicConfig(level=log_level.upper())
     try:
         ctx.obj.renew_session()
     except ConnectionError:
