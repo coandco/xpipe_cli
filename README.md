@@ -2,7 +2,7 @@
 [![GitHub license](https://img.shields.io/github/license/coandco/xpipe_cli.svg)](https://github.com/coandco/xpipe_cli/blob/master/LICENSE)
 [![PyPI version](https://img.shields.io/pypi/v/xpipe_cli)](https://pypi.org/project/xpipe_cli/)
 
-CLI that takes advantage of the new XPipe 10 REST API
+CLI that takes advantage of the new XPipe 10 API
 
 ## Installation
 Using pipx to install xpipe_cli in its own virtualenv is highly recommended
