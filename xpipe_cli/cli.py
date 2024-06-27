@@ -2,6 +2,11 @@ import asyncio
 import json
 import logging
 import logging.config
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
 from typing import List, Optional
 from uuid import UUID
 
@@ -30,18 +35,63 @@ def resolve_connection_name(client: Client, name: str) -> Optional[str]:
     return possible_matches[0]["connection"] if possible_matches else None
 
 
+XPIPE_DEFAULT_LOCATIONS = {
+    "win32": (
+        os.path.join(os.getenv("LOCALAPPDATA", ""), "XPipe", "cli", "bin", "xpipe.exe"),
+        os.path.join(os.getenv("LOCALAPPDATA", ""), "XPipe PTB", "cli", "bin", "xpipe.exe"),
+    ),
+    "cygwin": (
+        os.path.join(os.getenv("LOCALAPPDATA", ""), "XPipe", "cli", "bin", "xpipe.exe"),
+        os.path.join(os.getenv("LOCALAPPDATA", ""), "XPipe PTB", "cli", "bin", "xpipe.exe"),
+    ),
+    "linux": ("/opt/xpipe/cli/bin/xpipe", "/opt/xpipe-ptb/cli/bin/xpipe"),
+    "darwin": ("/Applications/XPipe.app/Contents/MacOS/xpipe", "/Applications/XPipe PTB.app/Contents/MacOS/xpipe"),
+}
+
+
+def start_xpipe(ptb: bool = False, custom_install: Optional[str] = None) -> bool:
+    if custom_install:
+        full_path = Path(custom_install)
+    else:
+        pathstr = shutil.which("xpipe-ptb" if ptb else "xpipe")
+        if not pathstr:
+            pathstr = XPIPE_DEFAULT_LOCATIONS.get(sys.platform, (None, None))[ptb]
+        if not pathstr:
+            return False
+        full_path = Path(pathstr)
+    if not full_path.exists():
+        return False
+    success = subprocess.call([full_path, "daemon", "start"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    return success == 0
+
+
 @click.group()
 @click.option("--ptb", is_flag=True, help="Use PTB port instead of release port")
 @click.option("--base-url", default=None, help="Override the URL of the XPipe server to talk to")
 @click.option("--token", default=None, help="The API token to use if the XPipe server isn't local")
-@click.option("--log-level", default="info", type=click.Choice(["error", "warning", "info", "debug"]), help="Severity of logs to print")
+@click.option("--debug", is_flag=True, help="Turn on xpipe_client debug logging")
+@click.option("--start-if-needed", is_flag=True, help="Attempt to start the XPipe daemon if unable to connect")
+@click.option("--custom-xpipe-location", default=None, help="Use a custom XPipe location with --start-if-needed")
 @click.version_option()
 @click.pass_context
-def cli(ctx: click.Context, ptb: bool, base_url: Optional[str], token: Optional[str], log_level: str):
+def cli(
+    ctx: click.Context,
+    ptb: bool,
+    base_url: Optional[str],
+    token: Optional[str],
+    debug: bool,
+    start_if_needed: bool,
+    custom_xpipe_location: Optional[str],
+):
+    if start_if_needed:
+        # This is a no-op if the daemon is already running
+        start_xpipe(ptb, custom_xpipe_location)
     ctx.obj = Client(token=token, base_url=base_url, ptb=ptb)
-    # Otherwise, urllib3 spams on every connection if it's set to debug
-    logging.getLogger('urllib3').propagate = False
-    logging.basicConfig(level=log_level.upper())
+    if debug:
+        # Otherwise, urllib3 spams on every connection if it's set to debug
+        logging.getLogger("urllib3").propagate = False
+        logging.basicConfig(level=logging.DEBUG)
+
     try:
         ctx.obj.renew_session()
     except ConnectionError:
