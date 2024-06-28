@@ -5,7 +5,7 @@
 CLI that takes advantage of the new XPipe 10 API
 
 ## Installation
-Using pipx to install xpipe_cli in its own virtualenv is highly recommended
+Using pipx to install xpipe_cli in its own virtualenv is highly recommended.
 ```commandline
 python3 -m pip install pipx
 python3 -m pipx install xpipe_cli
