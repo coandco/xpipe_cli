@@ -134,10 +134,10 @@ def ls(client: Client, category: str, name: str, type: str, output_format: str, 
     print(table.get_formatted_string(output_format, sortby=sort_by.title(), reversesort=reverse))
 
 
-async def probe_connections(async_client: AsyncClient, connections: List[dict]) -> List[Exception]:
+async def probe_connections(async_client: AsyncClient, connections: List[dict]) -> bool:
     lock = asyncio.Semaphore(10)
 
-    async def _probe(connection) -> dict:
+    async def _probe(connection: dict) -> dict:
         async with lock:
             try:
                 return await async_client.shell_start(connection["connection"])
@@ -145,17 +145,17 @@ async def probe_connections(async_client: AsyncClient, connections: List[dict]) 
                 print(f"Connection '{'/'.join(connection['name'])}' failed with error {e}")
                 raise
 
-    async def _close(connection):
+    async def _close(connection: dict):
         async with lock:
             await async_client.shell_stop(connection["connection"])
 
-    async def _progress(tasks: List[asyncio.Task]):
+    async def _progress():
         while num_left := len([x for x in tasks if not x.done()]):
             print(f"{num_left} hosts remaining...")
             await asyncio.sleep(5)
 
     tasks = [asyncio.create_task(_probe(x)) for x in connections]
-    progress_task = asyncio.create_task(_progress(tasks))
+    progress_task = asyncio.create_task(_progress())
     results = await asyncio.gather(*tasks, return_exceptions=True)
     await progress_task
     await asyncio.gather(*(asyncio.create_task(_close(x)) for x in connections), return_exceptions=True)
@@ -166,11 +166,13 @@ async def probe_connections(async_client: AsyncClient, connections: List[dict]) 
 @cli.command()
 @click.option("--category", "-c", default="*", help="Globbed category filter, defaults to *")
 @click.option("--name", "-n", default="*", help="Globbed name filter, defaults to *")
-@click.option("--type", default="*", help="Globbed type filter, defaults to *")
+@click.option("--type", "con_type", default="*", help="Globbed type filter, defaults to *")
 @click.pass_obj
-def probe(client: Client, category: str, name: str, type: str):
+def probe(client: Client, category: str, name: str, con_type: str):
     """Probe connections, with optional filters"""
-    connections = client.connection_query(categories=category, connections=name, types=type.lower())
+    connections = client.get_connections(categories=category, connections=name, types=con_type)
+    # Restrict our connections to only shell connections, as we can't probe non-shell connections
+    connections = [x for x in connections if x["usageCategory"] == "shell"]
     print(f"Spinning up probe requests for {len(connections)} hosts...")
     async_client = AsyncClient.from_sync_client(client)
     success = asyncio.run(probe_connections(async_client, connections))
