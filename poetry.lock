@@ -305,13 +305,13 @@ cffi = ">=1.0.0"
 
 [[package]]
 name = "certifi"
-version = "2024.6.2"
+version = "2024.7.4"
 description = "Python package for providing Mozilla's CA Bundle."
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "certifi-2024.6.2-py3-none-any.whl", hash = "sha256:ddc6c8ce995e6987e7faf5e3f1b02b302836a0e5d98ece18392cb1a36c72ad56"},
-    {file = "certifi-2024.6.2.tar.gz", hash = "sha256:3cd43f1c6fa7dedc5899d69d3ad0398fd018ad1a17fba83ddaf78aa46c747516"},
+    {file = "certifi-2024.7.4-py3-none-any.whl", hash = "sha256:c198e21b1289c2ab85ee4e67bb4b4ef3ead0892059901a8d5b622f24a1101e90"},
+    {file = "certifi-2024.7.4.tar.gz", hash = "sha256:5a1e7645bc0ec61a09e26c36f6106dd4cf40c6db3a1fb6352b0244e7fb057c7b"},
 ]
 
 [[package]]
@@ -899,13 +899,13 @@ files = [
 
 [[package]]
 name = "xpipe-client"
-version = "0.1.21"
+version = "0.1.23"
 description = "Client for the XPipe API"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "xpipe_client-0.1.21-py3-none-any.whl", hash = "sha256:e63282881d837a779e12fd3b0e5aff72bb1bd46f219cf92335f5c66216de4db3"},
-    {file = "xpipe_client-0.1.21.tar.gz", hash = "sha256:5949b33e7ba3b81f6431f8aecb507a2c9ec1d64121e61e87ffea9884103dfea5"},
+    {file = "xpipe_client-0.1.23-py3-none-any.whl", hash = "sha256:01c0481634c83743804f441852935a7cd80f41180beea5222ebbc75e5943acf9"},
+    {file = "xpipe_client-0.1.23.tar.gz", hash = "sha256:cda1fb92f1bcc6d1b4b948c85ba7dc0552f8a14f9b0b426fc7a2436720971fa1"},
 ]
 
 [package.dependencies]
@@ -1019,4 +1019,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "d38badc5396adf575712a63d198fa6088440950f927c9c46003196d1c407041a"
+content-hash = "b84c838efb58af094f8807f3bfce8c5d4f9bc7da1bb729846044140b8ab5ad87"

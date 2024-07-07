@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "xpipe-cli"
-version = "0.1.12"
+version = "0.1.13"
 description = "CLI that talks to the XPipe HTTP API"
 repository = "https://github.com/coandco/xpipe_cli"
 authors = ["Clint Olson <coandco@gmail.com>"]
@@ -12,7 +12,7 @@ click = "^8.1.7"
 requests-toolbelt = "^1.0.0"
 tqdm = "^4.66.4"
 prettytable = "^3.10.0"
-xpipe-client = "^0.1.21"
+xpipe-client = "^0.1.23"
 
 [tool.poetry.scripts]
 xpipe-cli = "xpipe_cli.cli:handled_cli"
