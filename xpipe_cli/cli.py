@@ -206,7 +206,7 @@ def pull(client: Client, remote: str, local: click.File):
         for chunk in resp.iter_content(1024):
             progress_bar.update(len(chunk))
             local.write(chunk)
-    print(f"Done!")
+    print("Done!")
     client.shell_stop(connection)
 
 
