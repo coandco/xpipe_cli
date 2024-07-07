@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 # Resolving to shortest name length for now, probably want to throw an error on duplicates once testing is done
-def resolve_connection_name(client: Client, name: str) -> Optional[str]:
+def resolve_connection_name(client: Client, name: str, con_type: str = '*') -> Optional[str]:
     # If the name is a valid UUID, assume we want to just use it without trying to look anything up
     try:
         UUID(name)
@@ -28,7 +28,7 @@ def resolve_connection_name(client: Client, name: str) -> Optional[str]:
     except ValueError:
         pass
 
-    all_connections = client.connection_query()
+    all_connections = client.get_connections(types=con_type)
     possible_matches = sorted(
         [x for x in all_connections if x["name"] and x["name"][-1] == name], key=lambda x: len(x["name"])
     )
@@ -270,6 +270,82 @@ def run_script(client: Client, script_file: click.File, connection_name: str, ra
     else:
         print(json.dumps(result, indent=2))
     client.shell_stop(connection)
+
+
+@cli.group()
+def service():
+    pass
+
+
+@service.command()
+@click.argument('host', type=str)
+@click.argument('remote_port', type=int)
+@click.argument('local_port', type=int, default=0)
+@click.option('--autostart', is_flag=True, help="Make sure connection is enabled once added")
+@click.option('--name', '-n', type=str, help="Set a custom name for the connection (defaults to HOST_REMOTEPORT)")
+@click.pass_obj
+def add(client: Client, host: str, remote_port: int, local_port: int, autostart: bool, name: Optional[str]):
+    """Add a service on HOST from REMOTE_PORT to LOCAL_PORT (LOCAL_PORT defaults to REMOTE_PORT if omitted)"""
+    if not local_port:
+        local_port = remote_port
+    host_uuid = resolve_connection_name(client, host, con_type='*ssh*')
+    if not host_uuid:
+        print(f"Couldn't find ssh-type connection UUID for {host}")
+        exit(1)
+    data = {"type": "customService", "remotePort": remote_port, "localPort": local_port, "host": {"storeId": host_uuid}}
+    if not name:
+        name = f"{host}_{remote_port}"
+    service_uuid = client.connection_add(name=name, conn_data=data)
+    if autostart:
+        client.connection_toggle(service_uuid, state=True)
+
+
+@service.command()
+@click.argument('service_name', type=str)
+@click.pass_obj
+def remove(client: Client, service_name: str):
+    """Remove service SERVICE_NAME"""
+    service_uuid = resolve_connection_name(client, service_name, con_type='*service*')
+    if not service_uuid:
+        print(f"Couldn't find service UUID for {service_name}")
+        exit(1)
+    client.connection_remove(service_uuid)
+
+
+@service.command()
+@click.argument('service_name', type=str)
+@click.option('--stop-others', is_flag=True, help="Stop other services before starting this one")
+@click.pass_obj
+def start(client: Client, service_name: str, stop_others: bool):
+    """Start an existing service by the name of SERVICE_NAME"""
+    service_uuid = resolve_connection_name(client, service_name, con_type='*service*')
+    if not service_uuid:
+        print(f"Couldn't find connection UUID for {service_name}")
+        exit(1)
+    if stop_others:
+        print("Stopping all enabled services...")
+        all_services = client.get_connections(types="*service*")
+        active_services = [x for x in all_services if x["cache"].get("sessionEnabled", False)]
+        for active_service in active_services:
+            print(f"Stopping {active_service['name'][-1]}...")
+            client.connection_toggle(active_service["connection"], state=False)
+    print(f"Activating service {service_name}...")
+    client.connection_toggle(service_uuid, state=True)
+    print("Activated.")
+
+
+@service.command()
+@click.argument('service_name', type=str)
+@click.pass_obj
+def stop(client: Client, service_name: str):
+    """Stop an existing service by the name of SERVICE_NAME"""
+    service_uuid = resolve_connection_name(client, service_name, con_type='*service*')
+    if not service_uuid:
+        print(f"Couldn't find connection UUID for {service_name}")
+        exit(1)
+    print(f"Deactivating service {service_name}...")
+    client.connection_toggle(service_uuid, state=False)
+    print("Deactivated.")
 
 
 def handled_cli():
